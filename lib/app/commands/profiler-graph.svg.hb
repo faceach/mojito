@@ -24,7 +24,7 @@
 
     <svg id="graph" x="0" y="30" width="800" height="600" viewBox="0 0 800 600">
         <text class="middle" x="400" y="300">This graph is interactive (like flash).</text>
-        <text class="middle" x="400" y="314">In order to use it, you should view it in a browser (such as Chrome)</text>
+        <text class="middle" x="400" y="314">In order to use it, you should view it in a browser (such as Chrome, Firefox, or Safari)</text>
         <text class="middle" x="400" y="328">that supports javascript in SVG.</text>
     </svg>
     <rect id="sb-graph" class="scrollbar inactive" x="801" y="30" width="8" height="600" rx="4" ry="4" />
