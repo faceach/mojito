@@ -6,8 +6,8 @@
         text.left { text-anchor: start; }
         text.middle { text-anchor: middle; }
         text.right { text-anchor: end; }
-        .scrollbar { fill: #888888; stroke: none; }
-        .scrollbar.inactive { fill: #EEEEEE; }
+        .scrollbar.active   { fill: #CCCCCC; stroke: none; }
+        .scrollbar.inactive { fill: #FFFFFF; stroke: none; }
 
         #timeline line { stroke: #000000; stroke-width: 1px; }
         #timeline text {}
@@ -40,25 +40,6 @@
 
 
     <script><![CDATA[
-        function debug(obj, showAll) {
-            var k, key, keys = [], val;
-            for (var key in obj) {
-                if (showAll || obj.hasOwnProperty(key)) {
-                    keys.push(key);
-                }
-            }
-            keys.sort();
-            for (k = 0; k < keys.length; k++) {
-                key = keys[k];
-                val = obj[key];
-                console.log('--------------------------------------------- ' + key + ' -- ' + typeof val);
-                if ('function' !== typeof val) {
-                    console.log(val);
-                }
-            }
-        }
-
-
         var NS_SVG = 'http://www.w3.org/2000/svg',
             NS_XLINK = 'http://www.w3.org/1999/xlink',
 
@@ -116,12 +97,123 @@
         }
 
 
-        function scrollbarInitHandlers() {
-            // TODO
+        function scrollbarInitHandlers(capture) {
+            var currentScrollbar,
+                currentTarget,
+                dragStart;
+
+            document.documentElement.addEventListener('mousedown', function(evt) {
+                if (!evt.target.scrollbar) {
+                    return;
+                }
+                currentScrollbar = evt.target;
+                currentTarget = document.getElementById(currentScrollbar.scrollbar.target.id);
+                dragStart = evt.screenY;
+                evt.preventDefault()
+                evt.stopPropagation();
+            }, capture);
+
+            document.documentElement.addEventListener('mousemove', function(evt) {
+                var sb,
+                    newOffset;
+
+                if (!currentScrollbar) {
+                    return;
+                }
+
+                // Do this early to prevent text selection while scrolling.
+                evt.preventDefault()
+                evt.stopPropagation();
+
+                sb = currentScrollbar.scrollbar;
+                newOffset = sb.offset + (evt.screenY - dragStart);
+                if (newOffset < 0) {
+                    newOffset = 0;
+                }
+                if (newOffset > sb.maxOffset) {
+                    newOffset = sb.maxOffset;
+                }
+                if (newOffset === sb.offset) {
+                    return;
+                }
+
+                // update scrollbar
+                sb.offset = newOffset;
+                currentScrollbar.setAttributeNS(null, 'y', sb.viewMin + sb.offset);
+                dragStart = evt.screenY;
+                
+                // update target
+                sb.target.offset = (sb.target.maxOffset * (sb.offset / sb.maxOffset));
+                sb.target.box[1] = sb.target.offset;
+                currentTarget.setAttributeNS(null, 'viewBox', sb.target.box.join(' '));
+            }, capture);
+
+            document.documentElement.addEventListener('mouseup', function(evt) {
+                if (!currentScrollbar) {
+                    return;
+                }
+                currentScrollbar = null;
+                currentTarget = null;
+                evt.preventDefault()
+                evt.stopPropagation();
+            }, capture);
         }
 
+
         function scrollbarLink(scrollbarID, targetID) {
-            // TODO
+            var scrollbar,
+                scrollContentHeight,
+                target,
+                targetContentHeight,
+                targetViewHeight,
+                sb = {
+                    target: {
+                        id: targetID
+                    }
+                };
+
+            scrollbar = document.getElementById(scrollbarID);
+            target = document.getElementById(targetID);
+
+            // set target viewBox based on width and height
+            sb.target.offset = 0;
+            sb.target.box = [0, sb.target.offset, target.width.baseVal.value, target.height.baseVal.value];
+            target.setAttributeNS(null, 'viewBox', sb.target.box.join(' '));
+
+            // get target details
+            targetContentHeight = target.getBBox().height;
+            targetViewHeight = target.viewBox.baseVal.height;
+            sb.target.maxOffset = targetContentHeight - targetViewHeight;
+
+            // detect when target doesn't need any scrolling
+            if (targetContentHeight <= targetViewHeight) {
+                sb.target.box[1] = 0;
+                target.setAttributeNS(null, 'viewBox', sb.target.box.join(' '));
+                if (scrollbar.scrollbar) {
+                    scrollbar.setAttributeNS(null, 'y', scrollbar.scrollbar.viewMin);
+                    scrollbar.setAttributeNS(null, 'height', scrollbar.scrollbar.viewHeight);
+                    delete scrollbar.scrollbar;
+                }
+                scrollbar.setAttributeNS(null, 'class', 'scrollbar inactive');
+                return;
+            }
+
+            // get scroll view range
+            sb.viewMin = scrollbar.getBBox().y;
+            sb.viewHeight = scrollbar.getBBox().height;
+
+            sb.offset = 0;
+
+            scrollContentHeight = sb.viewHeight * (targetViewHeight / targetContentHeight);
+            // TODO --  make sure scrollbar height doesn't get too small
+
+            sb.maxOffset = sb.viewHeight - scrollContentHeight;
+
+            scrollbar.setAttributeNS(null, 'y', sb.viewMin + sb.offset);
+            scrollbar.setAttributeNS(null, 'height', scrollContentHeight);
+            scrollbar.setAttributeNS(null, 'class', 'scrollbar active');
+
+            scrollbar.scrollbar = sb;
         }
 
 
@@ -307,6 +399,8 @@
             });
 
             currentRequest = requestID;
+
+            scrollbarLink('sb-graph', 'graph');
         }
 
 
@@ -340,7 +434,7 @@
         }
 
 
-        scrollbarInitHandlers();
+        scrollbarInitHandlers(true);
         sectionRequests();
     ]]></script>
 
