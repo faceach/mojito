@@ -286,7 +286,7 @@
                 textDOM.setAttribute('x', x);
                 textDOM.setAttribute('y', '20');
                 textDOM.setAttributeNS(null, 'class', classes[i] || 'middle');
-                textDOM.appendChild(document.createTextNode(Math.round(time)));
+                textDOM.appendChild(document.createTextNode(textAddCommas(Math.round(time))));
                 timelineDOM.appendChild(textDOM);
             }
         }
@@ -340,7 +340,7 @@
                     text += '[' + entry.id + ']';
                 }
 
-                tooltip.push(entry.startOffset);
+                tooltip.push(textAddCommas(entry.startOffset));
                 tooltip.push('+' + textAddCommas(entry.start - laststart));
 
                 gDOM = document.createElementNS(NS_SVG, 'g');
