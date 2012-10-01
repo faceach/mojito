@@ -94,6 +94,7 @@
                 sub = subs[s];
                 sub[0].removeEventListener(sub[1], sub[2], sub[3]);
             }
+            delete HANDLERS[group];
         }
 
 
